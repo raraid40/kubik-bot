@@ -1,112 +1,64 @@
 <?php
-error_reporting(0);
+date_default_timezone_set('Asia/Jakarta');
+require_once("sdata-modules.php");
 /**
- * @Author: salafi gaul
+ * @Author: salafi modif
  * @Date:   2017-12-11 17:01:26
- * @Last Modified by:   salafi gaul
- * @Last Modified time: 2018-09-04 15:00:21
- */
-class Modules
-{
-	public function sdata($url = null , $custom = null){
-		mkdir('cookies'); // pleas don't remove
-		$ch 	 	= array();
-		$mh 		= curl_multi_init();
-		$total 		= count($url);
-		$allrespons = array();
-		for ($i = 0; $i < $total; $i++) {
-			if($url[$i]['cookies']){
-				$cookies		= $url[$i]['cookies'];
-			}else{
-				$cookies 		= 'cookies/shc-'.md5($this->cookies())."-".time().'.txt'; 
-			}
-			$ch[$i] 			= curl_init();
-			$threads[$ch[$i]] 	= array(
-				'proses_id' => $i,
-				'url' 		=> $url[$i]['url'],
-				'cookies' 	=> $cookies, 
-				'note' 		=> $url[$i]['note'],
+ * @Last Modified by:   salafi
+ * @Last Modified time: 2018-09-06 15:13:34
+*/
+##############################################################################################################
+$config['deviceCode'] 		= '3551230xxxxxxx';
+$config['tk'] 				= 'ACGmNhoexxxxxx';
+$config['token'] 			= '35a7oDTxxxxxxx';
+$config['uuid'] 			= 'abdacad4xxxxxx4';
+$config['sign'] 			= '12988158bxxxxxx';
+$config['android_id'] 		= 'a28a65fbbxxxxxx';
+##############################################################################################################
+for ($x=0; $x <1; $x++) { 
+	$url 	= array(); 
+	for ($cid=0; $cid <20; $cid++) { 
+		for ($page=0; $page <10; $page++) { 
+			$url[] = array(
+				'url' 	=> 'http://api.beritaqu.net/content/getList?cid='.$cid.'&page='.$page,
+				'note' 	=> 'optional', 
 			);
-		    curl_setopt($ch[$i], CURLOPT_URL, $url[$i]['url']);
-			if($custom[$i]['gzip']){
-				curl_setopt($ch[$i], CURLOPT_ENCODING , "gzip");
+		}
+		$ambilBerita = $sdata->sdata($url); unset($url);unset($header);
+		foreach ($ambilBerita as $key => $value) {
+			$jdata = json_decode($value[respons],true);
+			foreach ($jdata[data][data] as $key => $dataArtikel) {
+				$artikel[] = $dataArtikel[id];
 			}
-		    curl_setopt($ch[$i], CURLOPT_HEADER, false);
-		    curl_setopt($ch[$i], CURLOPT_COOKIEJAR,  $cookies);
-      		curl_setopt($ch[$i], CURLOPT_COOKIEFILE, $cookies);
-		    if($custom[$i]['rto']){
-		    	curl_setopt($ch[$i], CURLOPT_TIMEOUT, $custom[$i]['rto']);
-		    }else{
-		    	curl_setopt($ch[$i], CURLOPT_TIMEOUT, 60);
-		    }
-		    if($custom[$i]['header']){
-		    	curl_setopt($ch[$i], CURLOPT_HTTPHEADER, $custom[$i]['header']);
-		    }
-		    if($custom[$i]['post']){
-		    	if(is_array($custom[$i]['post'])){
-		    		$query = http_build_query($custom[$i]['post']);
-		    	}else{
-		    		$query = $custom[$i]['post'];
-		    	}
-		    	curl_setopt($ch[$i], CURLOPT_POST, true);
-		    	curl_setopt($ch[$i], CURLOPT_POSTFIELDS, $query);
-		    }
-		    if($custom[$i]['proxy']){
-		    	curl_setopt($ch[$i], CURLOPT_PROXY, 	$custom[$i]['proxy']['ip']);
-		    	curl_setopt($ch[$i], CURLOPT_PROXYPORT, $custom[$i]['proxy']['port']);
-		    	if( $custom[$i]['proxy']['type'] ){
-		    		curl_setopt($ch[$i], CURLOPT_PROXYTYPE, $custom[$i]['proxy']['type']);
-		    	}
-		    }
-		    curl_setopt($ch[$i], CURLOPT_VERBOSE, false);
-		    curl_setopt($ch[$i], CURLOPT_CONNECTTIMEOUT , 0);
-		    curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, true);
-		    curl_setopt($ch[$i], CURLOPT_FOLLOWLOCATION, true);
-		    curl_setopt($ch[$i], CURLOPT_SSL_VERIFYPEER, false);
-		    curl_setopt($ch[$i], CURLOPT_SSL_VERIFYHOST, false); 
-        	if($custom[$i]['uagent']){
-		    	curl_setopt($ch[$i], CURLOPT_USERAGENT, $custom[$i]['uagent']);
-		    }else{
-				curl_setopt($ch[$i], CURLOPT_USERAGENT, "Mozilla/5.0 (iPhone; CPU iPhone OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) CriOS/42.0.2311.47 Mobile/12F70 Safari/600.1.4");
-		    }
-	    	curl_multi_add_handle($mh, $ch[$i]);
 		}
-		$active = null;
-		do {
-		    $mrc = curl_multi_exec($mh, $active);
-		    while($info = curl_multi_info_read($mh))
-		    {	 
-		    	$threads_data	= $threads[$info['handle']];
-		    	$result 		= curl_multi_getcontent($info['handle']);
-		       	$info 			= curl_getinfo($info['handle']);
-		       	$allrespons[] 	= array(
-		       		'data' 		=> $threads_data, 
-		       		'respons' 	=> $result,
-		       		'info' 		=> array(
-		       			'url' 		=> $info['url'],
-		       			'http_code' => $info['http_code'], 
-		       		),
-		       	);
-		        curl_multi_remove_handle($mh, $info['handle']);
-		    }
-		    usleep(100);
-		} while ($active);
-		curl_multi_close($mh);
-		return $allrespons;
+		$artikel = array_unique($artikel);
+		echo "[+] Mengambil data artikel (CID : ".$cid.") ==> ".count(array_unique($artikel))."\r\n";
 	}
-	public function cookies($length = 60) {
-	    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-	    $charactersLength = strlen($characters);
-	    $randomString = '';
-	    for ($i = 0; $i < $length; $i++) {
-	        $randomString .= $characters[rand(0, $charactersLength - 1)];
-	    }
-	    return $randomString.time().rand(10000000,99999999);
-	}
-	public function session_remove($arrayrespons){
-		foreach ($arrayrespons as $key => $value) {
-			unlink($value['data']['cookies']);
+	while (TRUE) {
+		$timeIn30Minutes = time() + 30*60;
+		$rnd 	= array_rand($artikel); 
+		$id 	= $artikel[$rnd];
+		$url[] = array(
+			'url' 	=> ',
+			'note' 	=> $rnd, 
+		);
+		$header[] = array(
+			'post' => 'OSVersion=8.0.0&android_channel=google&android_id='.$config['android_id'].'&content_id='.$id.'&content_type=1&deviceCode='.$config['deviceCode'].'&device_brand=samsung&device_ip=114.124.239.'.rand(0,255).'&device_version=SM-A730F&dtu=001&lat=&lon=&network=wifi&pack_channel=google&time='.$timeIn30Minutes.'&tk='.$config['tk'].'&token='.$config['token'].'&uuid='.$config['uuid'].'&version=10047&versionName=1.4.7&sign='.$config['sign'], 
+		);
+		$respons = $sdata->sdata($url , $header); 
+		unset($url);unset($header);
+		foreach ($respons as $key => $value) {
+			$rjson = json_decode($value[respons],true);
+			echo "[+][".$id." (Live : ".count($artikel).")] Message : ".$rjson['message']." | Poin : ".$rjson['data']['amount']." | Read Second : ".$rjson['data']['current_read_second']."\r\n";
+			if($rjson[code] == '-20003' || $rjson['data']['current_read_second'] == '330' || $rjson['data']['amount'] == 0){
+				unset($artikel[$value[data][note]]);
+			}
 		}
+		if(count($artikel) == 0){
+			sleep(30);
+			break;
+		}
+		sleep(5);
 	}
+	$x++;
 }
-$sdata = new Modules();
